@@ -1,0 +1,13 @@
+{
+    "bottom_shell_layers": "5",
+    "from": "User",
+    "inherits": "0.20mm Standard @BBL A1",
+    "is_custom_defined": "0",
+    "name": "spool holder",
+    "print_settings_id": "spool holder",
+    "sparse_infill_density": "25%",
+    "sparse_infill_pattern": "gyroid",
+    "version": "2.0.0.54",
+    "wall_generator": "arachne",
+    "wall_loops": "6"
+}

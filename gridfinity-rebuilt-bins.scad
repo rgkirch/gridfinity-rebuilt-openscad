@@ -41,9 +41,9 @@ $fs = 0.25; // .01
 
 /* [General Settings] */
 // number of bases along x-axis
-gridx = 3;
+gridx = 1;
 // number of bases along y-axis
-gridy = 2;
+gridy = 1;
 // bin height. See bin height information and "gridz_define" below.
 gridz = 6; //.1
 
@@ -62,7 +62,7 @@ include_lip = true;
 
 /* [Compartments] */
 // number of X Divisions (set to zero to have solid bin)
-divx = 1;
+divx = 2;
 // number of Y Divisions (set to zero to have solid bin)
 divy = 1;
 // Leave zero for default. Units: mm
@@ -84,11 +84,23 @@ place_tab = 0; // [0:Everywhere-Normal,1:Top-Left Division]
 // scoop weight percentage. 0 disables scoop, 1 is regular scoop. Any real number will scale the scoop.
 scoop = 1; //[0:0.1:1]
 
+/* [Tab Style] */
+// Style of the tab/label wall
+tab_wall_style = 1; // [0:Standard (Wedge), 1:Flat Overhang]
+// Width (Depth) of the label shelf thing (mm)
+tab_depth = 10;
+// Radius of the scoop at the bottom (mm)
+scoop_radius = 10;
+
+/* [Wall Settings] */
+// Wall Thickness (mm) (Default 0.95)
+wall_thickness = 0.6;
+
 /* [Base Hole Options] */
 // only cut magnet/screw holes at the corners of the bin to save uneccesary print time
 only_corners = false;
 //Use gridfinity refined hole style. Not compatible with magnet_holes!
-refined_holes = true;
+refined_holes = false;
 // Base will have holes for 6mm Diameter x 2mm high magnets.
 magnet_holes = false;
 // Base will have holes for M3 screws.
@@ -105,6 +117,9 @@ enable_thumbscrew = false;
 hole_options = bundle_hole_options(refined_holes, magnet_holes, screw_holes, crush_ribs, chamfer_holes, printable_hole_top);
 
 // ===== IMPLEMENTATION ===== //
+
+// Override Global Wall Thickness
+$gridfinity_wall_thickness = wall_thickness;
 
 bin1 = new_bin(
     grid_size = [gridx, gridy],
@@ -136,7 +151,10 @@ bin_render(bin1) {
                 cgs(height=depth),
                 style_tab,
                 place_tab != 0,
-                scoop
+                scoop,
+                tab_wall_style,
+                scoop_radius,
+                tab_depth
             );
         }
     }

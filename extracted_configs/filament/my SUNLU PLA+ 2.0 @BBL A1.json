@@ -1,0 +1,34 @@
+{
+    "default_filament_colour": [
+        "#EBE800"
+    ],
+    "filament_cost": [
+        "11"
+    ],
+    "filament_max_volumetric_speed": [
+        "20"
+    ],
+    "filament_settings_id": [
+        "my SUNLU PLA+ 2.0 @BBL A1"
+    ],
+    "from": "User",
+    "hot_plate_temp": [
+        "60"
+    ],
+    "hot_plate_temp_initial_layer": [
+        "60"
+    ],
+    "inherits": "SUNLU PLA+ 2.0 @BBL A1",
+    "is_custom_defined": "0",
+    "name": "my SUNLU PLA+ 2.0 @BBL A1",
+    "nozzle_temperature_range_high": [
+        "220"
+    ],
+    "textured_plate_temp": [
+        "60"
+    ],
+    "textured_plate_temp_initial_layer": [
+        "60"
+    ],
+    "version": "2.0.0.54"
+}

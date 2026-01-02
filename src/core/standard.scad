@@ -1,7 +1,7 @@
 
 
 // minimum wall thickness
-d_wall = 0.95;
+d_wall = is_undef($gridfinity_wall_thickness) ? 0.95 : $gridfinity_wall_thickness;
 
 // internal fillet radius
 r_f2 = 2.8;
@@ -29,7 +29,7 @@ MAGNET_HOLE_RADIUS = 6.5 / 2;
 MAGNET_HOLE_DEPTH = MAGNET_HEIGHT + (LAYER_HEIGHT * 2);
 
 // distance of hole from side of bin
-d_hole_from_side=8;
+d_hole_from_side = 8;
 
 // Based on https://gridfinity.xyz/specification/
 HOLE_DISTANCE_FROM_BOTTOM_EDGE = 4.8;
@@ -53,8 +53,8 @@ CHAMFER_ADDITIONAL_RADIUS = 0.8;
 CHAMFER_ANGLE = 45;
 
 // When countersinking the baseplate, how much to add to the screw radius.
-BASEPLATE_SCREW_COUNTERSINK_ADDITIONAL_RADIUS = 5/2;
-BASEPLATE_SCREW_COUNTERBORE_RADIUS = 5.5/2;
+BASEPLATE_SCREW_COUNTERSINK_ADDITIONAL_RADIUS = 5 / 2;
+BASEPLATE_SCREW_COUNTERBORE_RADIUS = 5.5 / 2;
 BASEPLATE_SCREW_COUNTERBORE_HEIGHT = 3;
 
 // ****************************************
@@ -67,7 +67,7 @@ BASEPLATE_SCREW_COUNTERBORE_HEIGHT = 3;
  */
 TAB_WIDTH_NOMINAL = 42;
 
- /**
+/**
  * @brief How deep the tab protrudes into the bin.
  * @details External code should use `TAB_SIZE.x` instead.
  */
@@ -76,20 +76,20 @@ _tab_depth = 15.85;
 /**
  * @brief Angle of the support holding up the tab
  */
- _tab_support_angle = 36;
+_tab_support_angle = 36;
 
- /**
+/**
  * @brief Additional support height, so the end isn't a sharp angle.
  */
- _tab_support_height = 1.2;
+_tab_support_height = 1.2;
 
 _tab_height = tan(_tab_support_angle) * _tab_depth + _tab_support_height;
 TAB_POLYGON = [
-    [0, 0], // Start
-    [0, _tab_height], // Up
-    [_tab_depth, _tab_height], //Out
-    [_tab_depth, _tab_height - _tab_support_height] // Prevent a sharp angle
-    //Implicit back to start
+  [0, 0], // Start
+  [0, _tab_height], // Up
+  [_tab_depth, _tab_height], //Out
+  [_tab_depth, _tab_height - _tab_support_height], // Prevent a sharp angle
+  //Implicit back to start
 ];
 
 /**
@@ -98,6 +98,34 @@ TAB_POLYGON = [
  *          "y": The height of the tab.
  */
 TAB_SIZE = TAB_POLYGON[2];
+
+/**
+ * @brief Height of the square/flat tab.
+ * @details Retains the same consistent height as the angled tab for compatibility,
+ *          but as a flat overhang.
+ */
+TAB_SQUARE_HEIGHT = 1.4;
+
+TAB_POLYGON_SQUARE = [
+  [0, 0], // Start
+  [0, TAB_SQUARE_HEIGHT], // Up
+  [_tab_depth, TAB_SQUARE_HEIGHT], // Out
+  [_tab_depth, TAB_SQUARE_HEIGHT - _tab_support_height], // Small lip
+  [_tab_depth - 1, 0], // Angle back in slightly to be print friendly-ish or just flat?
+  // Let's stick to a pure rectangle for "flat overhang" as requested, but maybe with the support lip?
+  // User asked for "flat overhang".
+  // "make the label ledge shelf thing a flat overhang instead of a wedge shape"
+  // The wedge shape is `tab` which has an angle.
+  // A flat overhang would be a rectangle.
+];
+
+// Redefining to a simple rectangle for the "Flat" style to match request exactly.
+TAB_POLYGON_FLAT = [
+  [0, 0],
+  [0, TAB_SQUARE_HEIGHT],
+  [_tab_depth, TAB_SQUARE_HEIGHT],
+  [_tab_depth, 0],
+];
 
 // ****************************************
 // Stacking Lip Constants
@@ -122,10 +150,23 @@ STACKING_LIP_SUPPORT_HEIGHT = 1.2;
  * @Details This is just a line, and will not create a solid polygon.
  */
 STACKING_LIP_LINE = [
-    [0, 0], // Inner tip
-    [0.7, 0.7], // Go out 45 degrees
-    [0.7, (0.7+1.8)], // Vertical increase
-    [(0.7+1.9), (0.7+1.8+1.9)], // Go out 45 degrees
+  [0, 0], // Inner tip
+  [0.7, 0.7], // Go out 45 degrees
+  [0.7, (0.7 + 1.8)], // Vertical increase
+  // Taper/Step: The visible top is thin (1.2mm total depth from inner tip)
+  [1.2, (0.7 + 1.8 + 1.9)],
+  // BUT the base must be 2.6mm to align with the wall below. 
+  // We add a 'back' face that connects to the 1.2mm top but extends to 2.6mm at the connection point.
+  // However, _profile_wall generates the top-down profile.
+  // If we simply end at [1.2, top], max X is 1.2 -> Offset R-1.2.
+  // If we add [2.6, 0], max X is 2.6 -> Offset R-2.6.
+  // We need the LIP itself to be thin at top.
+  // So: Inner Tip (0,0) -> ... -> [1.2, top] -> [2.6, top] would be thick top.
+  // [0,0] -> ... -> [1.2, top] ... -> [2.6, 0] would be tapered.
+  // Let's try explicit taper.
+  // To prevent non-manifold edges (exact touch), we push this point slightly 
+  // BELOW the top surface of the wall (negative Y) to create an overlap.
+  [2.6, -0.1], // Return to base width + Overlap
 ];
 
 /**
@@ -150,18 +191,19 @@ _stacking_lip_support_angle = 45;
  *          Including support.
  */
 _stacking_lip_support_height_mm =
-    STACKING_LIP_SUPPORT_HEIGHT
-    + tan(90 - _stacking_lip_support_angle) * STACKING_LIP_SIZE.x;
+STACKING_LIP_SUPPORT_HEIGHT + tan(90 - _stacking_lip_support_angle) * STACKING_LIP_SIZE.x;
 
 /**
  * @Summary Stacking lip with a support. Used to create a polygon.
  * @Details Support is so the stacking lip is not floating in mid air when wall width is less than stacking lip depth.
  */
-STACKING_LIP = concat(STACKING_LIP_LINE, [
-    [STACKING_LIP_SIZE.x-TOLLERANCE, -_stacking_lip_support_height_mm], // Down to support bottom
+STACKING_LIP = concat(
+  STACKING_LIP_LINE, [
+    [STACKING_LIP_SIZE.x - TOLLERANCE, -_stacking_lip_support_height_mm], // Down to support bottom
     [0, -STACKING_LIP_SUPPORT_HEIGHT], // Up and in (to bottom inner support)
     //[0, 0] // Implicit back to start
-]);
+  ]
+);
 
 // ****************************************
 // Base constants
@@ -173,16 +215,16 @@ STACKING_LIP = concat(STACKING_LIP_LINE, [
  * @Details This is just a line, and will not create a solid polygon.
  */
 BASE_PROFILE = [
-    [0, 0], // Innermost bottom point
-    [0.8, 0.8], // Up and out at a 45 degree angle
-    [0.8, (0.8+1.8)], // Straight up
-    [(0.8+2.15), (0.8+1.8+2.15)] // Up and out at a 45 degree angle
+  [0, 0], // Innermost bottom point
+  [0.8, 0.8], // Up and out at a 45 degree angle
+  [0.8, (0.8 + 1.8)], // Straight up
+  [(0.8 + 2.15), (0.8 + 1.8 + 2.15)], // Up and out at a 45 degree angle
 ];
 
 /**
  * @brief Maximum [x, y] values/size of the base.
  */
-_base_profile_max_mm= BASE_PROFILE[3];
+_base_profile_max_mm = BASE_PROFILE[3];
 
 /**
  * @Summary Corner radius of the top of the base.
@@ -234,19 +276,18 @@ BASE_BOTTOM_RADIUS = BASE_TOP_RADIUS - _base_profile_max_mm.x;
  * @param top_dimensions [Length, Width] of the top of the base.
  */
 function base_bottom_dimensions(top_dimensions = BASE_TOP_DIMENSIONS) =
-    assert(is_list(top_dimensions) && len(top_dimensions) == 2
-        && is_num(top_dimensions.x) && is_num(top_dimensions.y))
-    top_dimensions
-    - 2*[_base_profile_max_mm.x, _base_profile_max_mm.x];
+  assert(
+    is_list(top_dimensions) && len(top_dimensions) == 2 && is_num(top_dimensions.x) && is_num(top_dimensions.y)
+  )
+  top_dimensions - 2 * [_base_profile_max_mm.x, _base_profile_max_mm.x];
 
 // ***************
 // Gridfinity Refined Thumbscrew
 // See https://www.printables.com/model/413761-gridfinity-refined
 // ***************
 
-BASE_THUMBSCREW_OUTER_DIAMETER=15;
-BASE_THUMBSCREW_PITCH=1.5;
-
+BASE_THUMBSCREW_OUTER_DIAMETER = 15;
+BASE_THUMBSCREW_PITCH = 1.5;
 
 // ****************************************
 // Weighted Baseplate
@@ -271,7 +312,6 @@ bp_rcut_depth = 2;
 r_skel = 2;
 // minimum baseplate thickness (when skeletonized)
 h_skel = 1;
-
 
 // ****************************************
 // Deprecated Values

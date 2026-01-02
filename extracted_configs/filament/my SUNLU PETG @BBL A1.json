@@ -1,0 +1,43 @@
+{
+    "default_filament_colour": [
+        "#000000"
+    ],
+    "eng_plate_temp": [
+        "70"
+    ],
+    "eng_plate_temp_initial_layer": [
+        "70"
+    ],
+    "filament_cost": [
+        "10.11"
+    ],
+    "filament_settings_id": [
+        "my SUNLU PETG @BBL A1"
+    ],
+    "from": "User",
+    "hot_plate_temp": [
+        "70"
+    ],
+    "hot_plate_temp_initial_layer": [
+        "70"
+    ],
+    "is_custom_defined": "0",
+    "name": "my SUNLU PETG @BBL A1",
+    "nozzle_temperature_range_high": [
+        "260"
+    ],
+    "textured_cool_plate_temp": [
+        "70"
+    ],
+    "textured_cool_plate_temp_initial_layer": [
+        "70"
+    ],
+    "textured_plate_temp": [
+        "70"
+    ],
+    "textured_plate_temp_initial_layer": [
+        "70"
+    ],
+    "version": "2.0.0.54",
+    "type": "filament"
+}

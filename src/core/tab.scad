@@ -15,14 +15,39 @@ use <../helpers/grid_element.scad>
  *          Aka +X axis.
  *          Angled so the base is touching the origin.
  * @param width How wide the tab is.
+ * @param style 0: Standard (Wedge), 1: Flat Overhang
+ * @param depth How deep the tab protrudes into the bin.
  */
-module tab(width = TAB_WIDTH_NOMINAL){
+module tab(width = TAB_WIDTH_NOMINAL, style = 0, depth = _tab_depth){
     assert(is_num(width) && width > 0);
+    assert(is_num(depth) && depth > 0);
+
+    // Dynamic polygon generation based on depth
+    // Style 0 = Standard Wedge (using _tab_support_angle and _tab_support_height logic)
+    // Style 1 = Flat Overhang (Rectangle)
+
+    local_height = tan(_tab_support_angle) * depth + _tab_support_height;
+    
+    // Wedge
+    poly_wedge = [
+        [0, 0], 
+        [0, local_height], 
+        [depth, local_height], 
+        [depth, local_height - _tab_support_height]
+    ];
+    
+    // Flat
+    poly_flat = [
+       [0, 0],
+       [0, TAB_SQUARE_HEIGHT],
+       [depth, TAB_SQUARE_HEIGHT],
+       [depth, 0]
+    ];
 
     translate([0, width / 2, 0])
     rotate([90, 0, 00])
     linear_extrude(width)
-    polygon(TAB_POLYGON);
+    polygon(style == 1 ? poly_flat : poly_wedge);
 }
 
 /*

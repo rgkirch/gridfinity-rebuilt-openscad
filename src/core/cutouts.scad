@@ -59,8 +59,12 @@ use <../helpers/grid_element.scad>
  *        134: +y wall, left edge.
  * @param center_top Default true, cutter [x, y] is centered on the current position.
  *        If false, cutter is in quadrant 1 [+x, +y].
+ *        If false, cutter is in quadrant 1 [+x, +y].
+ * @param tab_style 0: Standard (Wedge), 1: Flat Overhang
+ * @param scoop_radius If > 0, sets the radius of the scoop.
+ * @param tab_depth If > 0, sets the depth of the tab.
  */
-module compartment_cutter(size_mm, scoop_percent=0, tab_width=0, tab_angle=90, center_top=true) {
+module compartment_cutter(size_mm, scoop_percent=0, tab_width=0, tab_angle=90, center_top=true, tab_style=0, scoop_radius=0, tab_depth=0) {
     assert(is_valid_3d(size_mm) && is_positive(size_mm));
     assert(is_num(scoop_percent));
     assert(is_num(tab_angle)
@@ -78,14 +82,17 @@ module compartment_cutter(size_mm, scoop_percent=0, tab_width=0, tab_angle=90, c
         if (scoop_percent > 0) {
             _compartment_scoop(
                 size_mm+as_3d(TOLLERANCE),
-                scoop_percent);
+                scoop_percent,
+                scoop_radius);
         }
 
         if (tab_width > 0) {
             _compartment_tab(
                 size_mm+as_3d(TOLLERANCE),
                 tab_width+TOLLERANCE,
-                tab_angle);
+                tab_angle,
+                tab_style,
+                tab_depth);
         }
     }
 }
@@ -118,8 +125,10 @@ module _half_rounded_square(size_mm) {
  * @param tab_angle Determines where the tab is placed.
  *                  This will be normalized.
  *                  Regardless of compartment dimensions, corners are always at 45 degree intervals.
+ * @param tab_style 0: Standard (Wedge), 1: Flat Overhang
+ * @param tab_depth Optional override for tab depth.
  */
-module _compartment_tab(size_mm, tab_width, tab_angle) {
+module _compartment_tab(size_mm, tab_width, tab_angle, tab_style=0, tab_depth=0) {
     assert(is_valid_2d(size_mm) && is_positive(size_mm));
     assert(is_num(tab_angle));
     assert(is_num(tab_width) && tab_width > 0);
@@ -127,9 +136,14 @@ module _compartment_tab(size_mm, tab_width, tab_angle) {
     size_2d = as_2d(size_mm);
     normalized_angle = normalize_to_box(size_2d, tab_angle);
 
+    // Calculate Z offset based on style
+    // Style 0 (Wedge) uses TAB_SIZE.y (approx 12.7mm)
+    // Style 1 (Flat) uses TAB_SQUARE_HEIGHT (1.4mm)
+    z_offset = tab_style == 1 ? TAB_SQUARE_HEIGHT : TAB_SIZE.y;
+
     snap_to_edge(size_2d, normalized_angle, tab_width)
-    translate([0, 0, -TAB_SIZE.y])
-    tab(tab_width);
+    translate([0, 0, -z_offset])
+    tab(tab_width, tab_style, tab_depth > 0 ? tab_depth : _tab_depth);
 }
 
 /**
@@ -137,12 +151,13 @@ module _compartment_tab(size_mm, tab_width, tab_angle) {
  * @details Add a scoop to `cut_compartment`
  * @param size_mm [x, y, z] Size of the compartment. In mm.
  * @param scoop_percent 0.0-1.0 how of a scoop should be present.
+ * @param scoop_radius Optional override for scoop radius.
  */
-module _compartment_scoop(size_mm, scoop_percent) {
+module _compartment_scoop(size_mm, scoop_percent, scoop_radius=0) {
     assert(is_list(size_mm) && len(size_mm) == 3 && size_mm.x >0 && size_mm.y > 0 && size_mm.z > 0);
-    assert(is_num(scoop_percent) && scoop_percent > 0.0 && scoop_percent <= 1.0);
+    assert(is_num(scoop_percent) && scoop_percent >= 0.0 && scoop_percent <= 1.0);
 
-    scoop = scoop_percent * size_mm.z/2;
+    scoop = scoop_radius > 0 ? scoop_radius : scoop_percent * size_mm.z/2;
 
     translate([
         -size_mm.x/2,
@@ -175,8 +190,11 @@ module _compartment_scoop(size_mm, scoop_percent) {
  * @param tab_top_left_only If the tab will only be on the top left compartment.
  *        Only false is supported when `grid_element_current` is not available.
  * @param scoop 0.0-1.0 How much of a scoop should be present.
+ * @param tab_style_shape 0: Standard (Wedge), 1: Flat Overhang. Named to avoid conflict with `style_tab`
+ * @param scoop_radius If > 0, sets the radius of the scoop.
+ * @param tab_depth If > 0, sets the depth of the tab.
  */
-module cut_compartment_auto(size_mm, style_tab=5, tab_top_left_only=false, scoop_percent=0) {
+module cut_compartment_auto(size_mm, style_tab=5, tab_top_left_only=false, scoop_percent=0, tab_style_shape=0, scoop_radius=0, tab_depth=0) {
 
     // Lambda so `grid_element_current()` is only called when needed.
     // It can throw!
@@ -190,7 +208,7 @@ module cut_compartment_auto(size_mm, style_tab=5, tab_top_left_only=false, scoop
         : style_tab == 0 ? max(size_mm) : TAB_WIDTH_NOMINAL;
     tab_angle = has_tab ? get_tab_angle(style_tab) : 0;
 
-    compartment_cutter(size_mm, scoop_percent, tab_width, tab_angle);
+    compartment_cutter(size_mm, scoop_percent, tab_width, tab_angle, tab_style=tab_style_shape, scoop_radius=scoop_radius, tab_depth=tab_depth);
 }
 
 /**
